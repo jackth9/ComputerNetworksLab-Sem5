@@ -3,19 +3,24 @@
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/applications-module.h"
+#include <iostream>
+#include <string>
 
 using namespace ns3;
 
 int main(int argc, char *argv[]) {
-    // Set TCP Variant to NewReno (Can be changed to TcpBbr, TcpCubic, etc.)
-    Config::SetDefault("ns3::TcpL4Protocol::SocketType", StringValue("ns3::TcpNewReno"));
+    std::string tcpVariant = "ns3::TcpNewReno";
+    CommandLine cmd(__FILE__);
+    cmd.AddValue("tcpVariant", "TCP congestion-control TypeId to test", tcpVariant);
+    cmd.Parse(argc, argv);
+    Config::SetDefault("ns3::TcpL4Protocol::SocketType", StringValue(tcpVariant));
 
     NodeContainer nodes;
     nodes.Create(2);
 
     PointToPointHelper p2p;
-    p2p.SetDeviceAttribute("DataRate", StringValue("10Mbps"));
-    p2p.SetChannelAttribute("Delay", StringValue("2ms"));
+    p2p.SetDeviceAttribute("DataRate", StringValue("2Mbps"));
+    p2p.SetChannelAttribute("Delay", StringValue("30ms"));
     NetDeviceContainer devices = p2p.Install(nodes);
 
     InternetStackHelper stack;
@@ -24,14 +29,19 @@ int main(int argc, char *argv[]) {
     Ipv4InterfaceContainer interfaces = address.Assign(devices);
 
     PacketSinkHelper sink("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), 8080));
-    sink.Install(nodes.Get(1)).Start(Seconds(0.0));
+    ApplicationContainer sinkApps = sink.Install(nodes.Get(1));
+    sinkApps.Start(Seconds(0.0));
 
     BulkSendHelper source("ns3::TcpSocketFactory", InetSocketAddress(interfaces.GetAddress(1), 8080));
-    source.SetAttribute("MaxBytes", UintegerValue(1000000)); // 1 MB transfer
+    source.SetAttribute("MaxBytes", UintegerValue(0));
     source.Install(nodes.Get(0)).Start(Seconds(1.0));
 
     Simulator::Stop(Seconds(10.0));
     Simulator::Run();
+    Ptr<PacketSink> receiver = DynamicCast<PacketSink>(sinkApps.Get(0));
+    std::cout << "TCP variant: " << tcpVariant << "\n"
+              << "Received: " << receiver->GetTotalRx() << " bytes\n"
+              << "Average throughput: " << receiver->GetTotalRx() * 8.0 / 9.0 / 1e6 << " Mbps\n";
     Simulator::Destroy();
     return 0;
 }

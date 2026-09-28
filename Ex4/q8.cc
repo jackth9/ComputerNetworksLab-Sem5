@@ -4,6 +4,7 @@
 #include "ns3/mobility-module.h"
 #include "ns3/wifi-module.h"
 #include "ns3/applications-module.h"
+#include "ns3/netanim-module.h"
 
 using namespace ns3;
 
@@ -40,6 +41,11 @@ int main(int argc, char *argv[]) {
     client.SetAttribute("MaxPackets", UintegerValue(10));
     client.SetAttribute("Interval", TimeValue(Seconds(1.0)));
     client.Install(nodes.Get(0)).Start(Seconds(2.0));
+
+    AnimationInterface animation("q8-mobility-animation.xml");
+    animation.UpdateNodeDescription(nodes.Get(0), "Moving Client");
+    animation.UpdateNodeDescription(nodes.Get(1), "Ad-hoc Node");
+    animation.UpdateNodeDescription(nodes.Get(2), "Echo Server");
 
     Simulator::Stop(Seconds(15.0));
     Simulator::Run();

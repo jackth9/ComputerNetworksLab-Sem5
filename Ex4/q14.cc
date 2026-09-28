@@ -3,6 +3,7 @@
 #include "ns3/csma-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/applications-module.h"
+#include <iostream>
 
 using namespace ns3;
 
@@ -23,11 +24,10 @@ int main(int argc, char *argv[]) {
     Ipv4Address multicastSource("10.1.1.1");
     Ipv4Address multicastGroup("225.1.2.4");
 
-    // Static Multicast Route Configuration
     Ipv4StaticRoutingHelper multicast;
     Ptr<Node> sourceNode = nodes.Get(0);
     Ptr<NetDevice> sourceDevice = devices.Get(0);
-    multicast.AddMulticastRoute(sourceNode, multicastSource, multicastGroup, sourceDevice, NetDeviceContainer(sourceDevice));
+    multicast.SetDefaultMulticastRoute(sourceNode, sourceDevice);
 
     uint16_t port = 9;
     PacketSinkHelper sink("ns3::UdpSocketFactory", InetSocketAddress(multicastGroup, port));
@@ -42,6 +42,11 @@ int main(int argc, char *argv[]) {
 
     Simulator::Stop(Seconds(10.0));
     Simulator::Run();
+    for (uint32_t i = 0; i < sinkApps.GetN(); ++i) {
+        Ptr<PacketSink> receiver = DynamicCast<PacketSink>(sinkApps.Get(i));
+        std::cout << "Receiver node " << receiver->GetNode()->GetId() << " received "
+                  << receiver->GetTotalRx() << " bytes\n";
+    }
     Simulator::Destroy();
     return 0;
 }

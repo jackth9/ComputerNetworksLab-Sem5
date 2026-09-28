@@ -3,6 +3,7 @@
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/applications-module.h"
+#include <iostream>
 
 using namespace ns3;
 
@@ -49,6 +50,15 @@ int main(int argc, char *argv[]) {
 
     Simulator::Stop(Seconds(10.0));
     Simulator::Run();
+
+    Ptr<PacketSink> tcpReceiver = DynamicCast<PacketSink>(tcpSinkApp.Get(0));
+    Ptr<PacketSink> udpReceiver = DynamicCast<PacketSink>(udpSinkApp.Get(0));
+    double measurementSeconds = 9.0;
+    std::cout << "TCP received: " << tcpReceiver->GetTotalRx() << " bytes, throughput: "
+              << tcpReceiver->GetTotalRx() * 8.0 / measurementSeconds / 1e6 << " Mbps\n";
+    std::cout << "UDP received: " << udpReceiver->GetTotalRx() << " bytes, throughput: "
+              << udpReceiver->GetTotalRx() * 8.0 / measurementSeconds / 1e6 << " Mbps\n";
+
     Simulator::Destroy();
     return 0;
 }
